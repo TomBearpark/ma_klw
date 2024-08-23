@@ -1,6 +1,9 @@
-install.packages('fixest',repos="https://ftp.gwdg.de/pub/misc/cran/")
+# install.packages('fixest',repos="https://ftp.gwdg.de/pub/misc/cran/")
 library(dplyr)
 library(fixest)
+
+# Set WD
+source('01_setup.R')
 
 #function to help stargazer package format in scientific format nicely, adapted from: https://stackoverflow.com/a/56924401
 replace_numbers = function(x, low=0.01, high=1e3, digits = 3, scipen=-7, ...) {
@@ -26,12 +29,18 @@ replace_numbers = function(x, low=0.01, high=1e3, digits = 3, scipen=-7, ...) {
 args = commandArgs(trailingOnly=TRUE)
 seed = as.integer(args[1]) # we ran with integer values from 1-20
 N    = as.integer(args[2]) # we ran with N=50 runs per script
-regspec = args[3]
+regspec = 'lagdiff_lintren_fix'
+drop_uzb = args[3]
+bootstrap_fix = args[4]
 
 #set random seed
 set.seed(seed)
 
 table=read.csv('DOSE_climate_data/DOSEV2_W5E5D_full.csv')
+
+if (drop_uzb=='TRUE') {
+  table = table |> filter(GID_0!='UZB')
+}
 
 #laglevel nonlinearities
 table$Tmean_2 <- table$Tmean^2
@@ -53,13 +62,30 @@ for (i in 1:length(varns)){
 pdat=panel(table,~GID_1+year,duplicate.method = "first")
 
 #bootstrapping to get estimates of regression uncertainty
-IDs=unique(table$GID_1)
+if (bootstrap_fix=='TRUE') {
+  IDs=unique(table$GID_0)
+} else if (bootstrap_fix=='FALSE') {
+  IDs=unique(table$GID_1)
+}
+
 
 for (n in 1:N){
   start_time <- Sys.time()
-  sampleIDs <- sample(IDs,size=length(IDs),replace=T)
-  new_df <- do.call(rbind, lapply(sampleIDs, function(x) table[table$GID_1==x,] ))
-  pdat=panel(new_df,~GID_1+year,duplicate.method = "first")
+
+  if (bootstrap_fix=='TRUE') {
+    sampleIDs <- sample(IDs,size=length(IDs),replace=T)
+    new_df = data.frame(GID_0 = sampleIDs) |> 
+      arrange(GID_0) |> 
+      group_by(GID_0) |> 
+      mutate(rep=row_number()) |>
+      left_join(table, by='GID_0', relationship='many-to-many') |>
+      mutate(GID_1 = paste0(GID_1, "_", rep))
+    pdat=panel(new_df,~GID_1+year)
+  } else if (bootstrap_fix=='FALSE') {
+    sampleIDs <- sample(IDs,size=length(IDs),replace=T)
+    new_df <- do.call(rbind, lapply(sampleIDs, function(x) table[table$GID_1==x,] ))
+    pdat=panel(new_df,~GID_1+year,duplicate.method = "first")
+  }
   
   #with linear trends
   for (TNL in 8:10){
@@ -93,6 +119,13 @@ for (n in 1:N){
 }
 
 for (TNL in 8:10){
-  write.csv(list_of_data[[TNL-7]],paste('reg_results/',regspec,'_spec_NL_',as.character(TNL),'_bootN_',as.character(N),'_seed_',as.character(seed),'_coefs.csv',sep=''))
+  filetag = ''
+  if (drop_uzb=='TRUE') {
+    filetag = paste0(filetag, '_dropuzb')
+  }
+  if (bootstrap_fix=='TRUE') {
+    filetag = paste0(filetag, '_bootstrapfix')
+  }
+  write.csv(list_of_data[[TNL-7]],paste('reg_results/',regspec,'_spec_NL_',as.character(TNL),'_bootN_',as.character(N),'_seed_',as.character(seed),filetag,'_coefs.csv',sep=''))
 }
 

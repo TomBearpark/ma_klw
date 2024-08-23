@@ -2,8 +2,12 @@ import pandas as pd
 import numpy as np
 import glob
 import sys 
+import os
 from scipy import signal
 from proj_functions import *
+
+dataDir = '/home/dhogan/data/gdp_temp/ma_rep/datacode'
+os.chdir(dataDir)
 
 #Estimating time series of aggregate damages, and time-slices of regional damages, from bootstrapped estimates of uncertainty across:
 #Regression parameters
@@ -88,22 +92,30 @@ def mov_av(data, N):
 	return(output)
 
 #input variables (socio scenario, climate scenario, regression specification, number of lags, number of bootstrap estimates to runn within this script, random seed, window of moving average for moderating variables 
-soc_ssp=sys.argv[1] # ssp2
-clim_ssp=sys.argv[2] # ssp126 / ssp585
-regspec=sys.argv[3] # lagdiff_lintren_fix_spec
-NLs=sys.argv[4] # 8_9_10
-Nboot=int(sys.argv[5]) # 50
-seed=(int(sys.argv[6])) # 1-20
-winN=int(sys.argv[7]) # 30
+soc_ssp= 'ssp2'
+clim_ssp= 'ssp585'
+regspec= 'lagdiff_lintren_fix_spec'
+NLs='8_9_10'
+seed=(int(sys.argv[1])) # 1-20
+Nboot= (int(sys.argv[2])) # 50
+winN=30
+drop_uzb = bool(int(sys.argv[3]))
+bootstrap_fix = bool(int(sys.argv[4]))
+
+filetag = ''
+if drop_uzb:
+	filetag += '_dropuzb'
+if bootstrap_fix:
+	filetag += '_bootstrapfix'
 
 #climate variables of interest, and their moderating variables 
 variables=['T_mean','T_std','P_sum','P_wdys_num','P_mext_am']
 moderators=['T_mean','T_seasdiff','P_sum','P_wdys_num','T_mean']
 
 if 'testvar' in regspec:
-        varsel=int(regspec.split('testvar')[1][0])
-        variables=[variables[0],variables[varsel]]
-        moderators=[moderators[0],moderators[varsel]]
+	varsel=int(regspec.split('testvar')[1][0])
+	variables=[variables[0],variables[varsel]]
+	moderators=[moderators[0],moderators[varsel]]
 if 'Tonly' in regspec:
 	variables=[variables[0]]
 	moderators=[moderators[0]]
@@ -117,11 +129,11 @@ seeds=[x+1 for x in range(20)]
 coefs_l=[]
 for n, NL in enumerate(NLs):
 	for s, sd in enumerate(seeds):
-		cfs=pd.read_csv('reg_results/' + regspec + '_NL_' + str(NL) + '_bootN_50_seed_' + str(sd) + '_coefs.csv')
+		cfs=pd.read_csv(f'reg_results/{regspec}_NL_{NL}_bootN_50_seed_{sd}{filetag}_coefs.csv')
 		if s==0:
 			coefs=cfs	
 		else:
-			coefs=coefs.append(cfs)
+			coefs=pd.concat([coefs,cfs])
 	del coefs['Unnamed: 0']
 	coefs_l.append(coefs)
 
@@ -267,9 +279,9 @@ for nb in range(Nboot):
 	dam_curves.append(aggreg(perc,np.linspace(0,3609,3610).astype(int),POP_traj))
 	#world region aggregation
 	for w in range(len(wrld_rgns)):
-	       #location within array of given countries in a world region
-	       locs=list(mask.loc[mask.NAME_0.isin(rgn_list[w])].index)
-	       dam_curves.append(aggreg(perc,locs,POP_traj))
+		#location within array of given countries in a world region
+		locs=list(mask.loc[mask.NAME_0.isin(rgn_list[w])].index)
+		dam_curves.append(aggreg(perc,locs,POP_traj))
 	dam_curves_l.append(dam_curves)
 
 	reg_imps.append(perc[:,:2060-start_year,:])
@@ -292,7 +304,6 @@ dam_curves_nat=np.array(dam_curves_nat_l)
 gdp_traj_dams_l=np.array(gdp_traj_dams_l)
 
 NLs=str(NLs[0])+'_'+str(NLs[1])+'_'+str(NLs[2])
-np.save('projection_output/dam_curves/' + soc_ssp + '_' + clim_ssp + '_' + regspec + '_NL_' + str(NLs) + '_movfix_' + str(winN) + '_Nboot_' + str(Nboot) + '_seed_' + str(seed) + '.npy',dam_curves_l)
-np.save('projection_output/reg_dams/' + soc_ssp + '_' + clim_ssp + '_' + regspec + '_NL_' + str(NLs) + '_movfix_' + str(winN) + '_Nboot_' + str(Nboot) + '_seed_' + str(seed) + '.npy',reg_imps)
-np.save('projection_output/nat_dams/' + soc_ssp + '_' + clim_ssp + '_' + regspec + '_NL_' + str(NLs) + '_movfix_' + str(winN) + '_Nboot_' + str(Nboot) + '_seed_' + str(seed) + '.npy',dam_curves_nat)
-
+np.save('projection_output/dam_curves/' + soc_ssp + '_' + clim_ssp + '_' + regspec + '_NL_' + str(NLs) + '_movfix_' + str(winN) + '_Nboot_' + str(Nboot) + '_seed_' + str(seed) + filetag + '.npy',dam_curves_l)
+np.save('projection_output/reg_dams/' + soc_ssp + '_' + clim_ssp + '_' + regspec + '_NL_' + str(NLs) + '_movfix_' + str(winN) + '_Nboot_' + str(Nboot) + '_seed_' + str(seed) + filetag + '.npy',reg_imps)
+np.save('projection_output/nat_dams/' + soc_ssp + '_' + clim_ssp + '_' + regspec + '_NL_' + str(NLs) + '_movfix_' + str(winN) + '_Nboot_' + str(Nboot) + '_seed_' + str(seed) + filetag + '.npy',dam_curves_nat)
