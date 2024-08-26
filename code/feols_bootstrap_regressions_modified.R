@@ -4,6 +4,7 @@ library(fixest)
 
 # Set WD
 source('01_setup.R')
+setwd(glue("{db}/datacode"))
 
 #function to help stargazer package format in scientific format nicely, adapted from: https://stackoverflow.com/a/56924401
 replace_numbers = function(x, low=0.01, high=1e3, digits = 3, scipen=-7, ...) {
@@ -63,9 +64,9 @@ pdat=panel(table,~GID_1+year,duplicate.method = "first")
 
 #bootstrapping to get estimates of regression uncertainty
 if (bootstrap_fix=='TRUE') {
-  IDs=unique(table$GID_0)
+  IDs = unique(table$GID_0)
 } else if (bootstrap_fix=='FALSE') {
-  IDs=unique(table$GID_1)
+  IDs = unique(table$GID_1)
 }
 
 

@@ -9,6 +9,7 @@ os.chdir(dataDir)
 # Set arguments
 soc_ssp = "ssp2"
 clim_ssp = "ssp585"
+regspec= 'lagdiff_lintren_fix_spec'
 suffix = "proj"
 NLs = "8_9_10"
 Nboot = 50
@@ -42,8 +43,8 @@ for filetag in ["", "_dropuzb", "_dropuzb_bootstrapfix"]:
             'num_lags': NLs,
             'median': np.median(damages[:,0,-1,:], axis=0) - 100,
             'mean': np.mean(damages[:,0,-1,:], axis=0) - 100,
-            'ub': np.percentile(damages[:,0,-1,:], 95, axis=0) - 100,
-            'lb': np.percentile(damages[:,0,-1,:], 5, axis=0) - 100,
+            'ub': np.percentile(damages[:,0,-1,:], 90, axis=0) - 100,
+            'lb': np.percentile(damages[:,0,-1,:], 10, axis=0) - 100,
         }
     )
     if filetag == "":
