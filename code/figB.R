@@ -37,6 +37,8 @@ run_cumulative_mes <- function(mList, mNames, NL_list,
   )
 }
 
+# setup environment -------------------------------------------------------
+source('01_setup.R')
 
 # load data ---------------------------------------------------------------
 
@@ -85,24 +87,105 @@ loo <- purrr::map_dfr(c("none", isos), run_loo, pdat)
 # output csv --------------------------------------------------------------
 write_csv(loo, paste0(dir.out, "loo_country.csv"))
 
+# plot --------------------------------------------------------------------
+me_plot_df = read_csv(paste0(dir.out, "loo_country.csv"))
 
-# sense check plot --------------------------------------------------------
+options(repr.plot.width=10, repr.plot.height=10)
+av.plotdf <- me_plot_df |>
+    group_by(baseline, Dropped=dropped) |> 
+    summarize(estimate = mean(estimate)*100) |>
+    mutate(Dropped = ifelse(Dropped == "none", "Kotz et al. (2024)", Dropped))
 
-loo %>% 
-  group_by(baseline, Dropped=dropped) %>% 
-  summarize(estimate = mean(estimate)) %>% 
-  ungroup() %>% 
+av_point = av.plotdf |> filter(baseline==25, Dropped=='UZB')
+av_point = av_point |> mutate(vlabel = 'UZB removed from data')
 
-  ggplot(data = .) + 
+other_av_point = av.plotdf |> filter(baseline==25, Dropped=='USA')
+
+kotz_point = av.plotdf |> filter(baseline==25, Dropped=='Kotz et al. (2024)')
+
+colors = c("#CE2D4F", "#003576")
+
+me_plot = ggplot(data = av.plotdf) + 
+    # UZB removed
+    geom_text_repel(
+        data = av_point,
+        aes(x = baseline, y = estimate, label=vlabel),
+        nudge_y       = 10,
+        nudge_x       = -2,
+        size          = 6,
+        box.padding   = 1,
+        point.padding = 0.5,
+        force         = 100,
+        segment.size  = 1,
+        arrow         = arrow(length = unit(0.015, "npc")),
+        segment.color = "grey50",
+        direction     = "x"
+    ) +
+    # Other countries
+    geom_text_repel(
+        data = other_av_point,
+        aes(x = baseline, y = estimate),
+        label="Other countries removed",
+        nudge_y       = 10,
+        nudge_x       = -2,
+        size          = 6,
+        box.padding   = 1,
+        point.padding = 0.5,
+        force         = 100,
+        segment.size  = 1,
+        arrow         = arrow(length = unit(0.015, "npc")),
+        segment.color = "grey50",
+        direction     = "x"
+    ) +
+    # Kotz ME
+    geom_text_repel(
+        data = kotz_point,
+        aes(x = baseline, y = estimate),
+        label="Kotz et al.",
+        nudge_y       = -2,
+        nudge_x       = -8,
+        size          = 6,
+        box.padding   = 1,
+        point.padding = 0.5,
+        force         = 100,
+        segment.size  = 1,
+        arrow         = arrow(length = unit(0.015, "npc")),
+        segment.color = "grey50",
+        direction     = "x"
+    ) +
     geom_line(
-      aes(x = baseline, y = estimate, group = Dropped),
-      alpha = .2) +
-    geom_line(data = . %>% filter(Dropped %in% c("none", "UZB")), 
-              aes(x = baseline, y = estimate,  color=Dropped), 
-              linewidth = 1) + 
-    geom_hline(yintercept = 0, alpha= .5) +
-    xlab("Baseline temp (C)") + ylab("Cumulative ME") + 
-    scale_color_manual(values = c("green", "red")) + 
-    theme(legend.position = "left") + 
-    ggtitle("Leave one country out")
+        data = filter(av.plotdf, !(Dropped %in% c("Kotz et al. (2024)", 'UZB'))),
+        aes(x = baseline, y = estimate, group = Dropped),
+        linewidth=0.7,
+        alpha = .1
+    ) +
+    geom_line(
+        data = filter(av.plotdf, Dropped %in% c("Kotz et al. (2024)")), 
+        aes(x = baseline, y = estimate), 
+        color="#CE2D4F",
+        linewidth=1.5,
+        alpha=1
+    ) + 
+    geom_line(
+        data = filter(av.plotdf, Dropped %in% c('UZB')), 
+        aes(x = baseline, y = estimate), 
+        color="#003576",
+        # linetype='dashed',
+        linewidth=1.5,
+        alpha=1
+    ) + 
+    # scale_linetype_manual(values = c("solid", "dashed")) +
+    # scale_color_manual(values = colors) + 
+    geom_hline(yintercept = 0, linetype="dashed", color = "grey") +
+    xlab("Baseline temperature (°C)") + 
+    ylab("Cumulative Marginal Effect (Percent)") + 
+    # scale_color_manual(values = c("#CE2D4F", "")) + 
+    theme_classic()  +
+    theme(
+        legend.position='none',
+        legend.position.inside = c(0.7, 0.2),
+        # make font larger
+        text = element_text(size=20)
+    )
+
 

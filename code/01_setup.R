@@ -1,11 +1,11 @@
 if(!require(pacman)) install.packages('pacman')
-pacman::p_load(tidyverse, fixest, marginaleffects, broom, haven, patchwork)
+pacman::p_load(tidyverse, fixest, marginaleffects, broom, arrow, haven, patchwork, glue, ggrepel)
 ggplot2::theme_set(ggplot2::theme_bw())
 
-db      <- file.path("~/Library/CloudStorage/Dropbox/gdp-temp/ma_rep/")
-code    <- file.path("~/Documents/GitHub/ma_klw/")
+# db      <- file.path("~/Library/CloudStorage/Dropbox/gdp-temp/ma_rep/")
+db = file.path("/home/dhogan/Dropbox/gdp-temp/ma_rep")
+code    <- file.path("/home/dhogan/repositories/ma_klw")
 dir.out <- file.path(code, "/outputs/")
-
 
 # helper funcs --------------------------------------------------------------
 
