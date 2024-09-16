@@ -238,7 +238,7 @@ for m, meth in enumerate(meths):
         ax.append(fig.add_subplot(gs[m,v]))
         ax[m*len(variables)+v].annotate(text=letters[m*len(variables)+v],xy=(-0.2,1.1),xycoords='axes fraction',fontsize='medium',weight='bold')
         ax[m*len(variables)+v].set_title('Conversion method ' + str(v+1) + '\n(corr='+'%.3g'%(correlations[v*len(meths)+m],)+')',fontsize='small')
-        ax[m*len(variables)+v].scatter(data.loc[data['gennaioli2014'+meth].notna()][var+meth], data.loc[data['gennaioli2014'+meth].notna(),'gennaioli2014'+meth],marker='.',alpha=0.2,color='orange')
+        ax[m*len(variables)+v].scatter(data.loc[data['gennaioli2014'+meth].notna()][var+meth], data.loc[data['gennaioli2014'+meth].notna(),'gennaioli2014'+meth],marker='.',alpha=1,color='orange')
 
         if 'ppp' in var:
             ax[m*len(variables)+v].set_xlabel('DOSE GRP_PC (2005-PPP-USD)\n'+labels[m], fontsize='small')
