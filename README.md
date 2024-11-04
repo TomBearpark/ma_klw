@@ -26,20 +26,20 @@ The R scripts require the following packages:
 ```
 pacman, tidyverse, fixest, marginaleffects, broom, arrow, haven, patchwork, glue, ggrepel
 ```
-The Python scripts require the following packages
+The Python scripts require the following packages:
 ```
 pandas, numpy, scipy
 ```
 
-The R packages will be installed automatically upon code execution. The python packages can be installed using `pip` or `conda`.
+The R packages will be installed automatically when the code is executed. The python packages can be installed using `pip` or `conda`.
 
-To run the code in this repository:
+To run the code:
 1. Download the replication files from the four above links, and save them into a folder on your machine.
 2. Edit the paths to the corresponding data and code directories in `code/01_setup.R` and `code/project_damages_modified.R`
 3. Run the `code/run_analysis.sh` bash script to execute R and Python scripts. Alternatively, manually execute the commands within this bash script directly in the command line.
 4. View outputs in the `outputs` folder.
 
-Note that with 1000 bootstrap replications, the code will take some time to run on a normal laptop. Code can be modified to reduce runtime by lowering the number of bootstrap iterations in `code/run_analysis.sh`.
+Note that for 1000 bootstrap iterations, the code will take some time to run on a normal laptop. Code can be modified to reduce runtime by lowering the number of bootstrap iterations in `code/run_analysis.sh`.
 
 
   
